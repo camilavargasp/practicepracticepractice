@@ -1,0 +1,141 @@
+---
+output: 
+  pdf_document: 
+    fig_caption: yes
+    includes:  
+title: "Contributions of marine capture fisheries to the domestic livelihoods and seafood consumption of Chile"
+subtitle: "Exerpt of report written by Camila Vargas and Ignacia Rivera"
+author: "Camila Vargas"
+
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(here)
+library(plotrix)
+library(RColorBrewer)
+library(cowplot) #theme_set(theme_cowplot())
+library(ggrepel)
+library(scales)
+library(knitr)
+library(kableExtra)
+
+
+# my_palette <-  c(brewer.pal(9, "Blues")[c(2,4,6,8)])
+# my_palette_2 <- c(brewer.pal(9, "GnBu")[c(4,5,6,7)])
+my_palette_3 <- c(brewer.pal(9, "Blues")[3], brewer.pal(9, "GnBu")[c(5,6,7)])
+#my_palette_3:
+#"#7BCCC4" verde
+#"#4EB3D3" azul mar
+#"#2B8CBE" azul oscuro
+#"#C6DBEF" celeste
+
+```
+
+## **Research Setting**
+
+In Chile, small-scale fisheries provide tremendous economic and social value to coastal communities (FAO 2012), and more than 60% of all marine landings come from artisanal fisheries operating in coastal zones (<5 miles offshore; SERNAPESCA 2017). Artisanal fishers who are registered in the National Fisheries Service (SERNAPESCA) have the right to self-organize and legally establish fishing associations. These associations may consist of women only, men only, or they may be mixed. The heterogeneity between associations makes it possible to determine whether there are fundamental differences between groups regarding key Social Ecological System (SES) variables that impact the performance of natural resources managed by common property regimes (Basurto et al 2013).
+According to SERNAPESCA (2018), there are 86,825 fishers registered in the national system (RPA, for its Spanish name, Registro Pesquero Artesanal), all of whom depend on different resources and play a variety of roles within Chilean fisheries. The Fisheries and Aquaculture Law (FAL, Nº 20 837) defines four main activities for the artisanal fishery sector: (a) boat owner, (b) professional diver, (c) shore gatherers including, seaweed harvesting or free diving, and (d) fishers as such. Though fishers must be registered in the RPA to legally extract marine resources, these activities are not mutually exclusive, and fishers can be registered across multiple categories.  Fishers can also organize and establish legal associations. Fisher’s associations must register in SERNAPESCA and elect a representative council made up of a president, secretary, and treasurer. Any member of the association can be part of the council, therefore some associations are led by women, and others are led by men.
+Women’s formal participation in the Chilean artisanal fishery has greatly increased over time (Figure 1-A). In 2004, women accounted for 6% of all artisanal fishers. Twelve years later, women accounted for 26% of the total (SERNAPESCA 2016). Most women are listed under the shore gatherer category (83.2%), followed by 15% enrolled as fishers.  Only a low percentage of women are boat owners (1.6%) and divers (0.2%). In the case of men, most registers are also for shore gatherer (48.4%) followed by fishers (33.5%), divers (9.8%) and boat owners (8.3%, Figure 2).
+In 2016, 1,318 small-scale fishing associations were officially registered with the RPA (SERNAPESCA 2017), 70% of which had a mixed-gender composition, 27% of which included only men, and 3% of which included only women. The number of artisanal fishery associations in Chile has been steadily increasing over the last decade, and during this time, the number of women-only associations has increased the most relative to the other mixed and men-only associations (1750%, 336%, and 62%, respectively, Figure 1-B). This shows that female participation in Chile’s artisanal sector has increased significantly, not only in terms of the number of women involved in the system but also the number of women participating in collective action groups.
+
+
+
+```{r Women participation in ssf in Chile, echo = FALSE, warning=FALSE, message=FALSE, fig.cap= 'Women participation in small-scale fisheires in Chile. A) Percentage of women officially registered in the National Fisheries Service (RPA) through time.  B) Number of mixed gender, only-women and only men associations oficially registered per year.Data source: SERNAPESCA, 2017.'}
+
+##Percentage of women in ssf from 2004 to 2016
+
+rpa_yearly_women <- read.csv(here("data/women_men_ssf_chile_yearly.csv")) %>% select(year, pct_women)
+  
+pct_women_plot <- ggplot(rpa_yearly_women, aes(x= year, y= pct_women/100))+
+  geom_line(color = "#7BCCC4", size = 1.5)+
+  theme_classic()+
+  scale_x_continuous(breaks = seq(2004, 2016, 1))+
+  scale_y_continuous(labels=scales::percent)+
+  xlab("Year")+
+  ylab("Percentage of women")+
+  theme(axis.title = element_text(size = 10, face = "bold"))
+  
+#plot(pct_women_plot)
+
+
+##RPA Associations by gender
+
+rpa_association <- read.csv(here("data/rpa_associations_yearly.csv")) %>% 
+  select(-total) %>% 
+  gather(key = Gender, value = number, 2:4) %>% 
+  mutate(Gender = fct_relevel(Gender,"Women", "Men", "Mixed"))
+
+association_plot <- ggplot(rpa_association)+
+  geom_bar(aes(x= year, y= number, fill = Gender), stat = "identity")+
+  theme_classic()+
+  scale_fill_manual(values = c("#7BCCC4", "#C6DBEF","#4EB3D3"))+ #2B8CBE
+  labs(y= "Number of associations", x="Year")+
+  scale_x_continuous(breaks = seq(2004, 2016, 1))+
+  theme(axis.title = element_text(size = 10, face = "bold"),
+         legend.position="bottom", 
+        legend.box = "horizontal")
+        #axis.text.x = element_text(angle = 30))
+
+##axis.text.x = element_text(size = 10, color = "black")
+
+#plot(association_plot)
+
+title_figure_method <- ggdraw() + draw_label("Women Participation in Small-scale Fisheries in Chile", fontface='bold')
+
+figure_method <- plot_grid(pct_women_plot,association_plot, labels = c("A", "B"), nrow= 2 , align = "v")
+
+#plot(figure_method)
+
+
+figure_method_title <- plot_grid(title_figure_method, figure_method, ncol=1, rel_heights=c(0.1, 1)) # rel_heights values control title margins
+  #draw_label("Data Source: SERNAPESCA, 2017", size = 9, fontface = "italic", x=0.87, y=0.03)
+
+plot(figure_method_title)
+
+##ggplot2::ggsave("women_ssf_chile.png", plot = figure_method_title)
+
+
+##Activity Men and women
+
+fishers_activity_2016 <- read_csv(here("data/fishers_activity_rpa_2016.csv"))%>%
+  group_by(gender) %>% 
+  mutate(total_gender = sum(number)) %>% 
+  ungroup() %>% 
+  mutate(pct_per_gender = (number/total_gender)*100) %>% 
+  mutate(Activity = ifelse(Activity=="Gleaner", "Shore gatherer", Activity))
+
+
+fishers_activity_16_plot <- ggplot(fishers_activity_2016)+
+  geom_bar(aes(x= gender, 
+               y= pct_per_gender/100, 
+               fill = Activity),
+           stat = "identity")+
+  theme_classic()+
+  scale_y_continuous(labels=scales::percent)+
+  coord_flip()+
+  scale_fill_manual(values = c("#C6DBEF", "#7BCCC4", "#4EB3D3", "#2B8CBE"))+
+  scale_x_discrete(labels=c("Men (n = 121,634)", "Women (n = 29,952)"))+
+  ylab("Percentage of RPA")+
+  ggtitle("Percentage of men and women's registers in each fishery activity")+
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black")) #
+
+fishers_activity_legend <- ggdraw(fishers_activity_16_plot)+
+  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.87, y=0.02)
+
+
+plot(fishers_activity_16_plot)
+
+
+
+```
+
+

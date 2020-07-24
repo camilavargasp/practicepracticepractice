@@ -1,0 +1,96 @@
+---
+title: "Carpentry R Workshop"
+author: "Camila Vargas"
+date: "5/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+
+# devtools::install_github("tidyverse/tidyr")
+# library(tidyr)
+
+```
+
+Read data
+```{r}
+interviews <- read_csv(here::here("Carpentry/ggplot_workshop/data/SAFI_clean.csv"), na = "NULL")
+```
+
+Exploring the data
+```{r}
+interviews_plotting <- interviews %>%
+    ## pivot wider by items_owned
+    separate_rows(items_owned, sep=";") %>%
+    mutate(items_owned_logical = TRUE) %>%
+    pivot_wider(names_from = items_owned, 
+                values_from = items_owned_logical, 
+                values_fill = list(items_owned_logical = FALSE)) %>%
+    rename(no_listed_items = `NA`) %>%
+    ## pivot wider by months_lack_food
+    separate_rows(months_lack_food, sep=";") %>%
+    mutate(months_lack_food_logical = TRUE) %>%
+    pivot_wider(names_from = months_lack_food, 
+                values_from = months_lack_food_logical, 
+                values_fill = list(months_lack_food_logical = FALSE)) %>%
+    ## add some summary columns
+    mutate(number_months_lack_food = rowSums(select(., Jan:May))) %>%
+    mutate(number_items = rowSums(select(., bicycle:car)))
+
+write_csv(interviews_plotting, here::here("Carpentry/ggplot_workshop/data_output/interviews_plotting.csv"))
+
+```
+
+
+##Read the data
+
+
+```{r}
+interviews_plotting <- read_csv("data_output/interviews_plotting.csv")
+```
+
+A plot needs 3 components
+To build a ggplot, we will use the following basic template that can be used for different types of plots:
+
+ggplot(data = <DATA>, mapping = aes(<MAPPINGS>)) +  <GEOM_FUNCTION>()
+
+
+```{r}
+ggplot(data = interviews_plotting)
+```
+
+
+```{r}
+ggplot(data = interviews_plotting, aes(x = no_membrs, y = number_items))
+```
+
+
+```{r}
+ggplot(data = interviews_plotting, aes(x = no_membrs, y = number_items)) +
+    geom_point()
+```
+
+```{r}
+# Assign plot to a variable
+interviews_plot <- ggplot(data = interviews_plotting, aes(x = no_membrs, y = number_items))
+
+# Draw the plot
+interviews_plot +
+    geom_point()
+```
+
+
+```{r}
+## This is the correct syntax for adding layers
+interviews_plot +
+    geom_point()
+
+## This will not add the new layer and will return an error message
+interviews_plot
++ geom_point()
+```
+

@@ -1,0 +1,54 @@
+---
+title: "Learning to write functions in R"
+author: "Camila Vargas"
+date: "5/18/2020"
+output: pdf_document
+---
+
+This code is a practice code bease on the Data Carpentry lecture on Writing Functions in R.
+
+https://swcarpentry.github.io/r-novice-inflammation/02-func-R/
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+In the last lesson, we learned to combine elements into a vector using the c function, e.g. `x <- c("A", "B", "C")` creates a vector x with three elements. Furthermore, we can extend that vector again using c, e.g. `y <- c(x, "D")` creates a vector y with four elements. Write a function called highlight that takes two vectors as arguments, called content and wrapper, and returns a new vector that has the wrapper vector at the beginning and end of the content:
+
+```{r}
+
+highlight <- function(content, wrapper){
+  
+  new_vector <- c(wrapper, content, wrapper)
+  
+  return(new_vector)
+  
+}
+
+highlight(content = "hello world", wrapper = "***")
+
+```
+
+
+If the variable v refers to a vector, then v[1] is the vector’s first element and v[length(v)] is its last (the function length returns the number of elements in a vector). Write a function called edges that returns a vector made up of just the first and last elements of its input:
+
+```{r}
+
+edges <- function(input){
+  
+  output <- c(input[1], input[length(input)])
+
+  return(output)
+  }
+  
+input <-  c("hola", "que", "tal", "po")
+
+edges(input)
+
+
+```
+
+
+
+

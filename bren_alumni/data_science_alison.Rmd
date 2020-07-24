@@ -1,0 +1,389 @@
+---
+title: "Bren Alumni Data Science Course"
+author: "Camila Vargas"
+date: "8/18/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(janitor)
+library(ggrepel)
+library(here)
+
+```
+
+#DAY 1: Monday August 19, 2019, 6:00pm - 7:30pm
+
+
+- Working in projects (.Rproj)
+
+- Reproducible code in scripts
+
+- Importing data
+
+```{r}
+df <- read_csv(here::here("bren_alumni/data/National Parks Visitation Data.csv"))
+```
+
+- Clean up the column headers usisng janitor::clean_names()
+```{r}
+np_data <- clean_names(df)
+```
+
+- Basic data wrangling with the {tidyverse} 
+
+Tip: Find cheat sheets: Go to Help- Cheatsheets --> You can open them directly as a ODF from the new version of R!
+
+1. select() - include (or exclude)
+
+I want to creat as subset np_data than only includes columns from parknames through years_raw
+```{r}
+np_select1 <- select(np_data, parkname:year_raw)
+```
+
+- The pipe operator (%>%) - "And then"
+
+```{r}
+np_select2 <- np_data %>% 
+  select(parkname:year_raw)
+```
+
+Create a subset that only includes non-sequencial columns
+Select also allow me to se the order od the columns I want in my data frame.
+Re oorder columns within a data frame
+
+```{r}
+np_select3 <- np_data %>% 
+  select(parkname, region, visitors)
+
+
+```
+
+
+Let's say I want to ceate a subset that includes from "region" to "year_raw", but excludes the "type" columns
+```{r}
+np_select5 <- np_data %>% 
+  select(region:year_raw, -type)
+```
+
+2. filter () - to conditionally subset data frame by row
+
+==  look for match
+!= doesn't match
+<,> <=, ect
+
+Example 1: I only want to keep rows where the entry "name" matches "Crater Lake National Park".
+
+```{r}
+np_filter1 <- np_data %>% 
+  filter(name == "Crater Lake National Park")
+```
+
+Example 2: I want to keep rows where the "name"" columns matches "Arcadia National Park" and the entry in the year_raw column is greater than 2005
+
+```{r}
+np_filter2 <- np_data %>% 
+  filter(name == "Arcadia National Park",
+         year_raw > 2005)
+```
+
+Example 3: Keep rows where the park state is either CA, or OR, or WA
+
+```{r}
+np_filter3 <- np_data %>% 
+  filter(state %in% c("CA", "OR", "WA"))
+
+```
+
+If you ever want to exclude things, then you use !=
+
+Retain every row where the "state" column does not match "CA"
+
+```{r}
+np_filter4 <- np_data %>% 
+  filter(state != "CA")
+```
+
+- Using combination of mutate() + case_when
+
+mutate() - adds a column retaining all exisiting column
+case_when () - user friendly if-else
+
+Example 1: Let's say I want to create a new column called type_simple which contains the following: if type = "National Park", then type_simple should be "NP"; if type = National Monumnet, then "NP"; for any other type I want type_simple to say "other"
+
+```{r}
+np_mutate_cw <- np_data %>% 
+  mutate(
+    type_simple = case_when(
+    type == "National Park" ~ "NP", ## ~ significa "then"
+    type == "National Monument" ~ "NM",
+    T ~ "other" ## T (for true, anything else in the type column)
+    ))
+```
+
+
+- dplyr:: group_by () + summarize () to create really nice summary tables calculated for groups within a df
+
+Example 1: I wan to calculate the mean number of annual visitors to each National Park in California since they were desinates as park
+
+```{r}
+np_groupby1 <- np_data %>%
+  filter(type == "National Park", state == "CA") %>% 
+  filter(year_raw != "Total") %>% 
+  group_by(name) %>% 
+  summarise(
+    mean_visitor = mean(visitors),
+    max_visitor = max(visitors),
+    min_visitor = min(visitors),
+    sd_visitors = sd(visitors))
+```
+
+You can also create grouping by multiples variables
+
+```{r}
+np_groupby2 <- np_data %>% 
+  group_by(region, state) %>% 
+  tally()## counts number of obstervations there are in my group!
+```
+
+tally() - easy way to get a summara of the counts of observations
+
+- Intro to data visualization with ggplot2
+
+I want to make a line graph of visitation to Yosemite NP
+
+1. Wrangle my data that I want to visualize
+```{r}
+
+yosemite <- np_data %>% 
+  filter(name== "Yosemite National Park",
+         year_raw != "Total") %>% 
+  select(name, year_raw, visitors) %>% 
+  arrange(year_raw) %>% 
+  mutate(year_raw = as.numeric(year_raw))
+
+```
+
+
+2. Create a graph using ggplot
+You have to let R know
+- You are using ggplot
+- Where to get the data
+. What type of graph you want to create
+
+```{r}
+ggplot(data = yosemite, aes(x = year_raw, y= visitors))+
+  geom_line()+
+  geom_point(color = "purple")+
+  geom_smooth()+
+  theme_bw()
+```
+
+Create a column graph that shows the number of different types of parks for year 2016
+
+1. Wrangle my data
+R defoult is to show the data in the graph alphabetically. To go about it we can fix that by giving factors a specific order for example the n count 
+
+
+```{r}
+np_type_count <-  np_data %>% 
+  filter(year_raw =="2016") %>% 
+  group_by(type) %>% 
+  tally() %>% 
+  ungroup() %>% 
+  mutate(type = fct_reorder(type, n)) ## fct reorder factors in the type colun by the n order.
+  
+```
+
+2. Graph
+
+```{r}
+ggplot(np_type_count, aes(x = type, y=n))+
+  geom_col()+
+  coord_flip()
+```
+
+
+
+
+
+#DAY 2: Wednesday August 21, 2019, 6:00pm - 7:30pm
+
+
+- Intro to Rmarkdown
+
+- Data wrangling continued
+
+- Customizing graphs & figures
+
+- Knitting markdown documents
+
+# DAY 3: Monday August 26, 2019
+*Markdown tip: # [space] creates header. Increasing number of # creates smaller headers.
+
+We will use the **tidyverser**, **sf**, **tmap**
+
+Command + Option + i --> short cut to add a code chunk
+
+```{r, session 3 set up, include=F }
+# I need to tell r not toinclude this chunk when knitting
+
+library(tidyverse)
+library(devtools)
+library(tmap)
+library(sf)
+
+```
+
+### Part 2: Read CA eco-region data
+
+```{r}
+ca_eco <- read_sf(dsn = "/Users/camilavargaspoulsen/github/practicepracticepractice/bren_alumni/data/session_3", layer = "ca_eco") %>% 
+  select(US_L3NAME) %>% 
+  rename(region = US_L3NAME) %>% 
+  st_simplify(dTolerance = 100) %>% #decrease the number of point isn my polygons. Less resolution. the higher the number the more simple. BE CAREFUL
+  st_transform(crs = 4326) #change projection on coordinate system
+
+# rapshaper::ms_simplify(); geos::gSimplify() --> other options to simplify my data
+
+plot(ca_eco)
+```
+
+geometry: list of all the coordinates that will create the poligon of the refion
+
+### Part 3: Read in CA COuntries polygons
+
+```{r}
+ca_counties <- read_sf(dsn = "/Users/camilavargaspoulsen/github/practicepracticepractice/bren_alumni/data/session_3", layer = "california_county_shape_file")
+
+st_crs(ca_counties) = 4326
+
+```
+
+
+```{r}
+ca_dams <- read_sf(dsn = "/Users/camilavargaspoulsen/github/practicepracticepractice/bren_alumni/data/session_3", layer = "California_Jurisdictional_Dams")
+```
+
+
+### 5. Make a plot
+
+to make changes related to the data it has to go inside the aes()
+
+```{r}
+ggplot(data = ca_counties)+
+  geom_sf(color = "black", ## this changes rea not related to the data
+          size = 0.1)+
+  geom_sf(data = ca_eco,
+          aes(fill = region), #color the eco regions
+          alpha = 0.5, # alpha is to play with transperency. The less the number the more trasperent?
+          color = "NA", # saying to not show the lunes of the ecoregions
+          show.legend = F)+ # do not show the legend
+  geom_sf(ca_dams,
+          aes(size = 0.5,
+          alpha = 0.5))+
+  theme_minimal()
+```
+
+
+## 7.Explore SB county eco-regions
+
+```{r}
+sb <- ca_counties %>% 
+  filter(NAME == "Santa Barbara")
+
+##Clip the eco region data to only include information within SB county - use_ st_intersection
+
+eco_clip <- st_intersection(ca_eco, sb) #look into the ca_eco data and just take the data that matches data in sb
+
+# Now lets plot it! 
+
+## Using ggplot
+
+ggplot()+
+  geom_sf(data = ca_counties,
+          fill = "gray90",
+          color = "gray80",
+          size = 0.2) +
+  geom_sf(data = eco_clip,
+          aes(fill = region),
+          color = "white",
+          size = 0.4,
+          show.legend = F)+
+  coord_sf(xlim = c(-121, -119), ylim = c(33.5, 35.5))+# manipulate what data I cant to change, limit the boundary box
+  scale_fill_manual(values = c("magente", "gold", "blue"))
+
+
+```
+
+### 7. Create interactive maps
+
+```{r}
+sb_clip_tmap <- tm_basemap("Esri.WorldImagery")+
+  tm_shape(eco_clip)+
+  tm_fill("region", palette = c("orange", "purple", "yellow"), alpha = 0.5)
+```
+
+
+## 8. How to create an "sf" object from latitude/longitude recodings (eg. in Excel file)
+
+Make a mock data set using tribble()
+
+```{r}
+my_example <- tribble(
+  ~id, ~lon, ~lat, ## this are y three columns
+  "tiger", -119.4, 34.35, ## this is my mock data
+  "lion", -119.41, 34.39,
+  "bear", -119.43, 34.38)
+
+#convert to sf object
+animal_sf <- st_as_sf(my_example, coords = c("lon", "lat"), crs = 4326) ## tell the names of the lon and lat coluns
+
+
+```
+
+
+Make a map using tmap
+
+```{r}
+animal_map <- tm_basemap("Stamen.Watercolor")+
+  tm_shape(animal_sf)+ #what data to use
+  tm_dots( labels = "id", col = "purple", size = 0.5) #shape
+
+animal_map
+
+```
+
+
+9. Make a Chloropleth of dam counts
+
+```{r}
+intersection <- st_intersection(ca_dams, ca_counties)
+
+dams_per_county <- intersection %>% 
+  group_by(NAME) %>% 
+  tally()## counts how many rows are there in each group which means how many dams are there in a county
+
+ca_tot <- ca_counties %>% ##contains the ca geometry per county
+  st_join(dams_per_county) %>%  #join the numeber of dmas per county
+  select(name = NAME.x, n) %>% 
+  replace_na(list(n =0))#use list() for multiple columns. Look into the n colun and replace NA for 0
+
+
+##one more plot using ggplot!
+
+ggplot()+
+  geom_sf(data = ca_tot,
+          aes(fill = n),## fill dependant in the value of n
+          size = 0.2,
+          color = "white")+
+  scale_fill_continuous(low = "yellow", high = "red")
+```
+
+Resources
+"Geomcomputation"
+
+

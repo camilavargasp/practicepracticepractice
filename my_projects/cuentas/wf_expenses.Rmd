@@ -1,0 +1,42 @@
+---
+title: "my finances"
+author: "Camila Vargas"
+date: "8/1/2019"
+output: pdf_document
+---
+
+##Set up
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+library(here)
+library(janitor)
+
+```
+
+##Data
+
+```{r}
+##My expences from Jan to Jul 2019
+
+wf_upto_july <- read.csv(here::here("my_projects/cuentas/wf_august_2019.csv")) %>% 
+  select(date, amount, detail) %>% 
+  mutate(date = as.Date(date, format = "%m/%d/%Y")) %>% 
+  mutate(amount = as.character(amount)) %>% 
+  mutate(value = str_extract(amount, "(?<=\\-).+")) %>% 
+  mutate(value = str_replace(value, ",", ".")) %>% 
+  mutate(value = as.numeric(value)) %>% 
+  filter(value < 350) %>% 
+  mutate(month = month(date, label = T)) 
+
+expenses_month <- wf_upto_july %>% 
+  group_by(month) %>% 
+  summarise(total = sum(value))
+
+write.csv(wf_upto_july, here::here("my_projects/cuentas/gastos_hasta_julio.csv"), row.names = F)
+
+
+```
+

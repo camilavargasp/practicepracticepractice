@@ -1,0 +1,349 @@
+---
+title: "Intro to tidyverse KEY -  R-Ladies SB May 2019"
+author: "An Bui & Sam Csik"
+date: "8/29/2019"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **What is the tidyverse?**
+
+The tidyverse is a collection of R packages designed for data science that share an underlying design philosophy, grammar, and data structures. Using the tidyverse can help to streamline your data manipulation and visualisations (and make this often-daunting process actually enjoyable). [Read more about it here!](https://www.tidyverse.org/) 
+
+## **What packages are in the tidyverse?**
+
+| package | usage | primary functions 
+|-----------|-----------------------------------------|---------------------------------------------------------| 
+| [ggplot2](https://ggplot2.tidyverse.org/) | create graphics | too much to cover here, but we recommend reviewing [Ch 3: Data visualisation](https://r4ds.had.co.nz/data-visualisation.html) in R for Data Science (Wickam & Grolemund 2017)
+| [dplyr](https://dplyr.tidyverse.org/) | data maniupulation | arrange(), filter(), group_by(), mutate(), select(), summarize(), tally()
+| [tidyr](https://tidyr.tidyverse.org/) | transform data to tidy format | gather(), spread()
+| [readr](https://readr.tidyverse.org/) | read in rectangular data (e.g. csv) | read_csv()
+| [purrr](https://purrr.tidyverse.org/) | facilitates work with functions & vectors | map()
+| [tibble](https://tibble.tidyverse.org/) | create tibbles (modernized data frames) | as_tibble(), tibble(), tribble()
+| [stringr](https://stringr.tidyverse.org/) | facilitates work with strings | str_detect, str_count, str_subset(), str_locate(), str_extract(), str_match(), str_replace(), str_split()
+| [forcats](https://forcats.tidyverse.org/) | facilitates work with categorical variables | fct_reorder(), fct_infreq(), fct_relevel(), fct_lump()
+| [magrittr](https://magrittr.tidyverse.org/) | facilitates sequential modification of a data frame | %>% 
+
+## **Don't have the tidyverse yet?**
+### Install using the following code: 
+
+```{r, eval = FALSE}
+install.packages("tidyverse")
+```
+
+### Load the tidyverse:
+
+```{r, message = FALSE, warning = FALSE}
+library(tidyverse)
+```
+
+## **Data wrangling cheat sheet:**
+
+Below are reproducible examples of commonly used tidyverse functions.
+
+**Remember:** you can string together multiple functions using the pipe operator `%>%`. R will evaluate the current function based off the the results of prior function calls.
+
+Let's first create some completely hypothetical data about the number of pizzas eaten by Sam, An, Allison, Julie, and Jamie over the past 3 years :)
+
+```{r}
+# NOTE: this data is untidy (i.e. in wide format, where each row represents three observations, not one)
+pizza_data <- tribble(
+  ~name,    ~`2017`,   ~`2018`,   ~`2019`, # R doesnt' love vars named as numbers; wrap them in backquotes! 
+  "Sam",       25,        20,        16,   # or avoid the problem by beginning var names with characters 
+  "An",        20,        15,        11,   # (e.g. "year_2017")
+  "Allison",   18,        17,        10,
+  "Julie",     19,        10,        14,
+  "Jamie",     21,        13,        14
+  )
+```
+
+It's a great habit to always familiarize/explore your data before starting to wrangle it:
+```{r, eval = FALSE}
+str(pizza_data) # view data structures of pizza_data
+colnames(pizza_data) # view columns of pizza_data
+head(pizza_data) # view first 10 rows of pizza_data 
+```
+
+We'll first want to transform 'pizza_data' into [tidy](https://r4ds.had.co.nz/tidy-data.html) (long) format:
+
+**`gather()`** transforms data from wide to long format
+```{r}
+tidy_pizza <- pizza_data %>% 
+  gather(`2017`, `2018`, `2019`, key = year, value = pizzas_eaten)
+```
+
+Conversely, you can transform 'tidy_pizza' back to wide format: 
+
+**`spread()`** transform data from long to wide format
+```{r}
+# let's convert our 'tidy_pizza' data back to wide format using spread()
+back_to_wide <- tidy_pizza %>% 
+  spread(key = year, value = pizzas_eaten)
+```
+
+From here on, we'll be working with our **tidy data** i.e. **`tidy_pizza`** to practice some useful wrangling functions.
+
+### Subsetting data: 
+
+**`select()`** select columns to retain and specify their order
+```{r}
+names_pizzas <- tidy_pizza %>% 
+  select(name, pizzas_eaten)
+```
+
+**`filter()`** select observations within columns 
+```{r}
+sam_an <- tidy_pizza %>% 
+  filter(name == "Sam" | name == "An") # "|" tells R to filter any observations that match "Sam" OR "An"
+sam_an_alt <- tidy_pizza %>% 
+  filter(name %in% c("Sam", "An")) # another way of filtering
+not_sam <- tidy_pizza %>% # 
+  filter(name != "Sam") # != tells R to filter any observations that DO NOT match "Sam"
+```
+
+**`pull()`** pull out a single variable from a data frame and save it as a vector
+```{r}
+pizza_eaten_vec <- tidy_pizza %>% 
+  pull(pizzas_eaten)
+```
+
+### Manipulating/adding variables:
+
+**`arrange()`** order observations as specified (default = alphabetical or ascending)
+```{r}
+ordered_names <- tidy_pizza %>% 
+  arrange(name) # for descending alphabetical order, use "arrange(desc(names))"
+ordered_num_pizzas <- tidy_pizza %>% 
+  arrange(pizzas_eaten) # for descending order, use "arrange(-pizzas_eaten)"
+```
+
+**`rename()`** rename a column
+```{r}
+renamed_pizzas <- tidy_pizza %>% 
+  rename(total_pizzas = pizzas_eaten)
+```
+
+**`mutate()`** a versatile function
+```{r}
+# use mutate() to calculate a new value using existing observations and add this new value to a new column
+pizzas_per_month <- tidy_pizza %>% 
+  mutate(pizzas_per_month = pizzas_eaten/12)
+# use mutate in conjunction with case_when to add a column based off existing observations
+fav_pizza <- tidy_pizza %>% 
+  mutate(
+    fav_pizza = case_when(
+      name == "Sam" ~ "Buffalo Chicken",
+      name == "An" ~ "Pepperoni",
+      name == "Allison" ~ "Cheese",
+      name == "Julie" ~ "Margherita",
+      name == "Jamie" ~ "Veggie"
+    )
+  )
+# use mutate in conjunction with ifelse, where if the observation in the 'name' column matches "Sam" or "An", report "yes". If not, report "no"
+allergies <- tidy_pizza %>% 
+  mutate(food_allergies = ifelse(name %in% c("Sam", "An"), "yes", "no")) 
+# use mutate() to coerce a variable to a different data type
+name_as_factor <- tidy_pizza %>% 
+  mutate(name = as_factor(name)) # you can check that this worked by viewing 'str(name_as_factor)'
+```
+
+### Summarizing data: 
+
+**`group_by()`** groups observations such that data operations are performed at the level of the group
+```{r}
+grouped_names <- tidy_pizza %>% 
+  group_by(name) # notice that nothing appears to change when you view 'grouped_df.' See the summarize() function below for further example
+```
+
+**`summarize()`** calculate summary statistics
+```{r}
+pizza_summary <- tidy_pizza %>% 
+  group_by(name) %>% 
+  summarize(
+    avg_pizzas = mean(pizzas_eaten), # feel free to substitute any summary stat function here!!
+    max_pizza = max(pizzas_eaten),
+    min_pizza = min(pizzas_eaten) # and add as many as you want to calculate!
+  )
+```
+
+**`tally()`** sum values across groups
+```{r}
+tallied_pizza <- tidy_pizza %>% 
+  group_by(name) %>% 
+  tally(pizzas_eaten)
+```
+
+## **Now let's practice!**
+
+### Load the tidyverse and any additional required packages:
+
+```{r, message = FALSE, warning = FALSE}
+library(tidyverse) # if you haven't loaded it already
+library(here) # from the last R-Ladies Meetup!
+library(janitor) # some neat tools for cleaning messy data
+```
+
+### Load the data: 
+
+In celebration of this year's superbloom, we'll be exploring phenometric data of flowering California plants from the [USA -- National Phenology Network](https://www.usanpn.org/home).
+
+```{r, message = FALSE, warning = TRUE}
+# use this to load your data if you forked our repository from GitHub
+pheno_data <- read_csv(here::here("data","phenometrics_data.csv"))
+# use this to load your data if you downloaded materials from Google Drive and created your own project
+pheno_data <- read_csv("data/phenometrics_data.csv")
+```
+
+Let's pretend we're trying to plan a getaway to the Joshua Tree National Park and want to time our trip so that we have the greatest chance of seeing fully bloomed plants. 
+
+### Explore: 
+
+We should first familiarize ourselves with the data. 
+
+```{r, eval = FALSE}
+dim(pheno_data) # view dimensions of the df
+head(pheno_data) # view first 10 rows of df
+tail(pheno_data) # view last 10 rows of df
+str(pheno_data) # view data structure of df
+colnames(pheno_data) # view the columns of df
+```
+
+### Wrangle:
+
+This dataset is *huge*--we'll want to wrangle it so that it only includes the information that we're interested in. We will:
+
+a. convert variable names to snake_case
+b. filter for California observations  
+c. select relevant columns of data 
+d. rename columns  
+e. unite multiple columns  
+f. remove any NA values  
+g. set the levels for a character vector  
+
+To demonstrate these individual steps, we'll perform each function separately. Notice that we perform subsequent function calls on the data frame generated from the prior step. At the end, we'll show you how to combine all steps into a single, succint code chunk.
+
+#### a. convert variable names to snake_case using `janitor::clean_names()`
+
+Variable names that include spaces are a pain to work with. Each time you call a variable name with a space, it must be wrapped in backquotes for R to recognize it. Let's convert them to snake_case to make things easier.
+
+```{r}
+pheno_snake <- pheno_data %>% 
+  clean_names()
+```
+
+#### b. filter for California observations
+
+This dataset has information on flowering plants for many states, but we're interested in California flowering plants. First, we'll filter only for California observations.
+
+```{r}
+ca_obs <- pheno_snake %>% 
+  filter(state == "CA")
+```
+
+#### c. select the columns we want
+
+This is a bit more manageable (`r nrow(ca_obs)` rows as opposed to `r nrow(pheno_data)` rows) but there are still a lot of columns that we don't need in order to visualize our data. Let's select only the columns we're interested in.
+
+```{r}
+select_columns <- ca_obs %>% 
+  select(5:9, phenophase_description, year, month) # you can supply a range of columns, or specify them individually
+```
+
+#### d. rename columns
+
+To make this even more manageable, we can change column names to something easier (i.e. shorter to type). For example:
+
+```{r}
+rename_columns <- select_columns %>% 
+  rename(pheno = phenophase_description)
+```
+
+#### e. unite columns
+
+We can also combine the `genus` and `species` into a single column.
+
+```{r}
+unite_columns <- rename_columns %>% 
+  unite(genus_species, genus, species, sep = "_") # sep = "_" is the default
+```
+
+#### f. remove any NA values
+
+If you look at the `unite_columns` data frame, you'll see that there are `NA` values for some of the `year` and `month` entries. We can take out any rows with `NA` in either of these columns. **Be aware** that this drops **all** rows that contain 'NA' in either `year` or `month`.
+
+```{r}
+remove_NA <- unite_columns %>% 
+  drop_na(year, month)
+```
+
+#### g. set the levels for a character vector
+
+Lastly, we're going to set the levels for the `pheno` column. When R is given a character vector, its default is to consider the objects in the vector in alphabetical order, but sometimes that doesn't make sense. Each phenophase comes in a specific order in nature, so we want to set the levels of the `month` and `pheno` columns to reflect that for downstream plotting. To do this, we use `dplyr::mutate()` and `forcats::fct_relevel()`.
+
+```{r}
+relevel_month <- remove_NA %>% 
+  mutate(month = fct_relevel(month, month.name)) # month.name is a built-in vector of months (in the correct order!)
+relevel_pheno <- relevel_month %>% 
+  mutate(pheno = fct_relevel(pheno, c("Flowers or flower buds", "Open flowers", "Pollen release (flowers)")))
+```
+
+Like `group_by()`, this doesn't change the structure of the data frame. It's a way of telling R, "There's an order to the objects in this character vector that I want you to remember."
+
+#### Now all together!
+
+We split each wrangling step up into a separate data frame, but you could have linked all these functions together in one chunk using the pipe operator, like this:
+
+```{r}
+ca_pheno_simple <- pheno_data %>% 
+  clean_names() %>% 
+  filter(state == "CA") %>%
+  select(5:9, phenophase_description, year, month) %>% 
+  rename(pheno = phenophase_description) %>%
+  unite("genus_species", genus, species) %>% 
+  drop_na(year, month) %>% 
+  mutate(pheno = fct_relevel(pheno, c("Flowers or flower buds", "Open flowers", "Pollen release (flowers)")),
+         month = fct_relevel(month, month.name)) 
+```
+
+With this simplified and cleaned data set, we're ready to explore a subset of the desert species we're most interested in. We love **Joshua trees** (*Yucca brevifolia*), **creosote bushes** (*Larrea tridentata*), and **Mojave yucca** (*Yucca schidigera*) and want to know when these plants are blooming. Let's first isolate data for these species by:
+
+a. filtering for only Joshua tree, creosote bush, and Mojave yucca 
+b. grouping observations by month, name, and phenophase
+c. finding the total counts by month, name, and phenophase
+
+```{r}
+fav_spp <- ca_pheno_simple %>% 
+  filter(common_name %in% c("Joshua tree", "creosote bush", "Mojave yucca")) %>%
+  group_by(month, common_name, pheno) %>% 
+  tally() # you could also use summarize() here!
+```
+
+**Note:** You could have also continued to pipe these steps directly into the `ca_pheno_simple` data frame rather than creating a separate `fav_spp` data frame.
+
+### Plot:
+
+Now that we have our data tallied and in tidy format, we're ready to make a plot! We want to:
+
+a. create a column graph showing the total counts of plants by phenophase and by month
+b. create a different panel for each plant species
+c. make it pretty
+
+**Note:** Only the first 3 lines of the following code are necessary to make the plot. Everything else simply modifies the appearance and make it a bit more presentable. There are *tons* of ways to customize plots -- we explore only a few options below.
+
+```{r, fig.align = 'center', fig.width = 15, fig.height = 10}
+fav_plants_plot <- ggplot(fav_spp, aes(x = month, y = n, fill = pheno)) + # fill = counts of each phenophase
+  geom_col(position = "dodge") + # separate columns for each phenophase (instead of stacked)
+  facet_wrap(~common_name) + # create separate panels for each species
+  labs(x = "Month", y = "Counts", fill = "Phenophase") + # change axis labels and legend names 
+  scale_x_discrete(limits = c(month.name)) + # include all months on x-axis, even if there's no data
+  scale_y_continuous(expand = c(0,0), breaks = seq(0, 20, by = 3)) + # remove space between columns and x-axis; set y-axis tick mark interval
+  scale_fill_manual(values = c("darkseagreen3", "cadetblue")) + # change colors
+  theme_classic() + 
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 0.7), 
+        axis.text.x = element_text(angle = 45, hjust = 0.9)) 
+fav_plants_plot

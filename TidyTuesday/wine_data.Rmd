@@ -1,0 +1,78 @@
+---
+title: "Wine Data TidyTuesday"
+author: "Camila Vargas"
+date: "May 28, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Setup
+```{r}
+library(tidyverse)
+library(here)
+library(ggstance)
+
+#Tuesday May 29 data on WINE
+
+wine_ratings <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-28/winemag-data-130k-v2.csv") %>% 
+  
+           
+
+
+```
+
+#Exploring
+```{r}
+wine_ratings <- wine_ratings %>% 
+  mutate(points = as.numeric(points)) %>% 
+  arrange(points)
+  
+```
+
+
+##From Tweeter
+```{r}
+
+#wine <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-28/winemag-data-130k-v2.csv")
+
+color <-  RColorBrewer::brewer.pal(3,'Blues')
+lineplot <-  wine_ratings %>%
+  group_by(country) %>%
+  drop_na(country) %>%
+  summarise(mean = mean(points), 
+            SD = sd(points), 
+            n = n()) %>%
+  drop_na(SD) %>%
+  arrange(mean) %>%
+  mutate(signif = as.factor(ifelse(n>100,color[1],color[3]))) %>% 
+  mutate(mean = as.factor(mean))
+
+x <-  lineplot$country
+lineplot$country = factor(lineplot$country, levels = x)
+
+lineplot <- lineplot %>% 
+  mutate(mean = fct_relevel(mean, mean))
+  
+  p <-  ggplot(lineplot, aes(y=country, x=mean, xmin=mean-SD, xmax=mean+SD, color= I(signif))) +
+  geom_point() +
+  geom_errorbarh() +
+  ylab('') +
+  xlab('Mean Review Score') +
+  theme_light() +
+  scale_color_discrete('Number of review:', labels= c('< 100 review', '> 100 review')) +
+  labs(title = "Which country produce the best wine?",
+       caption = "Source: WineEnthusiast") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.y  = element_text(size=8.5),
+        panel.grid.major.x=element_blank(),
+        panel.grid.minor.x=element_blank()) 
+
+plot(p)
+
+
+```
+
+
