@@ -1,0 +1,50 @@
+---
+title: "Datos Seba"
+author: "Camila Vargas"
+date: "8/10/2020"
+output: pdf_document
+---
+
+
+## Primer paso: cargar las bibliotecas necesarias
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse) ## carga: dplyr, tidyr, readr, stingr, purr, tibble, ggplot2 y forcats. Necesario para poda de datos
+library(here) ## establece el directorio de trabajo directamente al Rproj en el que estas trabajondo
+library(janitor) ##limpiar nombres de columnas
+
+```
+
+
+## Leer los datos crudos
+
+```{r}
+##Leer los datos si tienes el Rproj creado y el archivo vive en la misma carpeta donde vive tu Rproj
+datos_crudos <- read_delim(here::here("Datos_CTmax_A. pisum_SMartel.csv)"), ";", escape_double = FALSE, trim_ws = TRUE) %>% 
+  clean_names()
+
+##En el caso de no tener un Rproj tienes que modificar la ruta que esta en comillas, con la unbicación de donde vive el archivo de los datos crudos
+
+datos_crudos <- read_delim("~/Downloads/Datos_CTmax_A. pisum_SMartel.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+
+## Poda de datos
+- La nomenclatura != s esusa para decir "distinto de"
+- La expresión %in% es cuando queremos "llamar" a un vector con más de un elemento. Cada vez que llamo a más de un elemento tengo que ussar la función c()
+
+```{r}
+datos_limpios <- datos_crudos %>% 
+  filter(temp_trial != 34,
+         acc != "25_V",
+         locality %in% c("Linares", "P_Arenas"))
+```
+
+Los 4 genotipos son:
+Linares:
+"APG3"   "APG1/2" 
+P.Arenas:
+"APG4"   "APG13"

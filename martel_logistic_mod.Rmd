@@ -1,0 +1,40 @@
+---
+title: "martel 2"
+author: "Camila Vargas"
+date: "12/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(broom)
+library(janitor)
+library(here)
+```
+
+Read data
+
+```{r}
+
+raw_data <- read.csv(here::here("data_raw/martel_2_raw.csv")) %>% 
+  clean_names()
+```
+
+
+```{r}
+
+logistic_mod <- raw_data %>% 
+  tidyr::nest(c(-genotype, -temperature)) %>% 
+  dplyr::mutate(mod = purrr::map(data, ~ glm(survival ~ t_min, data = ., family = "binomial")),
+                tidy_model = purrr::map(mod, tidy)) %>% 
+  tidyr::unnest(tidy_model) %>% 
+  janitor::clean_names() %>% 
+  dplyr::select(-data, -mod) %>% 
+  dplyr::mutate(term = dplyr::case_when(term == "(Intercept)" ~ "intercept",
+                                        T ~ term))
+```
+
+
+
